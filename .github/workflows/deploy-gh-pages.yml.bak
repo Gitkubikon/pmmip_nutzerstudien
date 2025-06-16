@@ -1,0 +1,48 @@
+# GitHub Actions workflow for deploying to GitHub Pages using markserve
+# This workflow will use bunx (or npx as fallback) to serve markdown files with markserve
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install bun (for bunx)
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "${HOME}/.bun/bin" >> $GITHUB_PATH
+
+      - name: Install markserve
+        run: |
+          if command -v bunx > /dev/null; then
+            bunx add markserve
+          else
+            npm install -g markserve
+          fi
+
+      - name: Export static site with markserve
+        run: |
+          if command -v bunx > /dev/null; then
+            bunx markserve . --export _site
+          else
+            npx markserve . --export _site
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
